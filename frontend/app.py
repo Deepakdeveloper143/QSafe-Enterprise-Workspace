@@ -323,11 +323,16 @@ else:
             context = st.text_area("Environment Context", "Recent surge in failed SSH logins from multiple IPs. Public LB shows high latency.", height=100)
             if st.button("FORECAST ATTACKS"):
                 with st.spinner("AI is calculating probabilities..."):
-                    resp = requests.post(f"{API_BASE}/threats/predict", json={"context": context}, headers=headers)
+                    # We can use the orchestrator's streaming for prediction too if we adapt the prompt, 
+                    # but for now let's just make the Analyst fast as it's the main chat interface.
+                    # Actually, let's just make everything stream if possible.
+                    resp = requests.post(f"{API_BASE}/agents/analyze", json={"event": f"Predict attacks for: {context}"}, headers=headers, stream=True)
                     if resp.status_code == 200:
-                        data = resp.json()
-                        st.info(f"**Forecasting Confidence:** {data['confidence_score']*100}%")
-                        st.write(data["prediction"])
+                        st.markdown("---")
+                        def stream_pred():
+                            for chunk in resp.iter_content(chunk_size=None, decode_unicode=True):
+                                if chunk: yield chunk
+                        st.write_stream(stream_pred)
 
     elif page == "Discovery Scan":
         st.markdown("<h1 class='fade-in'>🔍 Quantum Discovery Engine</h1>", unsafe_allow_html=True)
@@ -346,11 +351,15 @@ else:
         event = st.text_area("Security Event for Analysis", height=200, placeholder="Example: Unauthorized database access attempt...")
         if st.button("CONSULT AGENT"):
             with st.spinner("Agent processing threat intelligence..."):
-                resp = requests.post(f"{API_BASE}/agents/analyze", json={"event": event}, headers=headers)
+                resp = requests.post(f"{API_BASE}/agents/analyze", json={"event": event}, headers=headers, stream=True)
                 if resp.status_code == 200:
                     st.markdown("---")
                     st.markdown("### 📋 Remediation Strategy")
-                    st.write(resp.json()["analysis"])
+                    def stream_response():
+                        for chunk in resp.iter_content(chunk_size=None, decode_unicode=True):
+                            if chunk: yield chunk
+                    st.write_stream(stream_response)
+
 
     elif page == "Secure Vault":
         st.markdown("<h1 class='fade-in'>🗄️ Post-Quantum Vault</h1>", unsafe_allow_html=True)
