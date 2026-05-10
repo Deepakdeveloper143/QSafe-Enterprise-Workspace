@@ -337,7 +337,8 @@ else:
     elif page == "Discovery Scan":
         st.markdown("<h1 class='fade-in'>🔍 Quantum Discovery Engine</h1>", unsafe_allow_html=True)
         st.markdown("Analyze infrastructure for cryptographic technical debt.")
-        path = st.text_input("Root Directory", "/app")
+        path = st.text_input("Root Directory", ".")
+
         if st.button("INITIALIZE DEEP SCAN"):
             with st.spinner("Analyzing cryptographic primitives..."):
                 resp = requests.get(f"{API_BASE}/discovery/scan", params={"path": path}, headers=headers)

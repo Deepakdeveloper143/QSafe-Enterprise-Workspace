@@ -3,21 +3,22 @@ def calculate_risk_score(cbom_findings: list):
     risk_register = []
 
     for finding in cbom_findings:
-        detected = finding.get("detected")
-        if detected in ["rsa", "ecc", "md5", "sha1"]:
+        asset = finding.get("asset_type", "").lower()
+        if any(tech in asset for tech in ["rsa", "ecc", "md5", "sha1"]):
             score -= 10
             risk_register.append({
-                "issue": f"Legacy cryptography detected: {detected}",
+                "issue": f"Legacy cryptography detected: {finding.get('asset_type')}",
                 "impact": "Vulnerable to Harvest Now, Decrypt Later (HNDL)",
                 "action": "Migrate to NIST PQC (Kyber/Dilithium)"
             })
-        elif detected in ["password", "secret", "token"]:
+        elif any(secret in asset for secret in ["password", "secret", "token"]):
             score -= 15
             risk_register.append({
-                "issue": f"Hardcoded secret detected: {detected}",
+                "issue": f"Hardcoded secret detected: {finding.get('asset_type')}",
                 "impact": "High risk of credential compromise",
                 "action": "Move to secure vault"
             })
+
 
     # Ensure score is between 0 and 100
     score = max(0, min(100, score))
